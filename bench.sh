@@ -11,7 +11,7 @@
 #####################################################################
 # The speed test was added by dmmcintyre3 from FreeVPS.us as a      #
 # modification to the original script.                              #
-# Modded Script: https://freevps.us/thread-2252.html                # 
+# Modded Script: https://freevps.us/thread-2252.html                #
 # Copyright (C) 2011 by dmmcintyre3 for the modification            #
 #################################################################################
 # Contributors:									#
@@ -72,20 +72,20 @@ sysinfo () {
 
 
 logSpeedTable() {
-	printf "%24s  %-24s  %8s\n" "$1" "$2" "$3" | tee -a $logfile
+	printf "%32s  %-24s  %8s\n" "$1" "$2" "$3" | tee -a $logfile
 }
 
 speedtest() {  #parameters# 1: flags, 2: url, 3: location, 4: provider
-	local speed=$( wget -O /dev/null $1 $2 2>&1 | awk '/\/dev\/null/ {speed=$3 $4} END {gsub(/\(|\)/,"",speed); print speed}' )
+	local speed=$( wget -O /dev/null "$1" "$2" 2>&1 | awk '/\/dev\/null/ {speed=$3 $4} END {gsub(/\(|\)/,"",speed); print speed}' )
 	logSpeedTable "$3" "$4" "$speed"
 }
 
-speedtest4 () {
-	log "IPv4 Speed Test"
-	log "---------------"
+AsiaPacificSpeedTest () {
+	log "Asia/Pacific IPv4 Speed Test"
+	log "----------------------------"
 
 	local ip=$( wget -qO- ipv4.icanhazip.com ) # Getting IPv4
-	logSysTable "Public address" $ip
+	logSysTable "Public address" "$ip"
 	log ""
 
 	echo "WARNING: Downloading 10x 100 MB files. 1 GB bandwidth will be used!"
@@ -93,8 +93,36 @@ speedtest4 () {
 
 	logSpeedTable Location Provider Speed
 
+	# Asia
+	speedtest -4 http://speedtest.tokyo.linode.com/100MB-tokyo.bin "Tokyo, Japan" Linode
+	speedtest -4 http://speedtest.singapore.linode.com/100MB-singapore.bin "Singapore" Linode
+	speedtest -4 http://speedtest.sng01.softlayer.com/downloads/test100.zip "Singapore" Softlayer
+	speedtest -4 http://speedtest.c1.hkg1.dediserve.com/100MB.test "Equinix, Hong Kong" Dediserve
 
-	speedtest -4 http://reddit.com							"Atlanta, GA, US"		Coloat
+	# Australia
+	speedtest -4 http://speedtest.c1.syd1.dediserve.com/100MB.test "Equinix, Sydney, Australia" Dediserve
+
+	# US (west coast only)
+	speedtest -4 http://speedtest.sea01.softlayer.com/downloads/test100.zip "Seattle, WA, US" Softlayer
+	speedtest -4 http://speedtest.sjc01.softlayer.com/downloads/test100.zip "San Jose, CA, US" Softlayer
+	speedtest -4 http://speedtest.fremont.linode.com/100MB-fremont.bin "Fremont, CA, US" Linode
+
+	log ""
+	log ""
+}
+
+speedtest4 () {
+	log "IPv4 Speed Test"
+	log "---------------"
+
+	local ip=$( wget -qO- ipv4.icanhazip.com ) # Getting IPv4
+	logSysTable "Public address" "$ip"
+	log ""
+
+	echo "WARNING: Downloading 10x 100 MB files. 1 GB bandwidth will be used!"
+	echo ""
+
+	logSpeedTable Location Provider Speed
 
 	# CDN speed test
 	speedtest -4 http://cachefly.cachefly.net/100mb.test				"CDN"				Cachefly
@@ -123,7 +151,7 @@ speedtest6 () {
   	log "---------------"
 
 	local ip=$( wget -qO- ipv6.icanhazip.com ) # Getting IPv6
-	logSysTable "Public address" $ip
+	logSysTable "Public address" "$ip"
   	log ""
 
 	echo "WARNING: Downloading 10x 100 MB files. 1 GB bandwidth will be used!"
@@ -194,7 +222,7 @@ gbench () {
                  sed -n 's/.*\(https\?:[^:]*\.tar\.gz\).*/\1/p')
 
         local noext=${dl##*/}
-        noext=${noext%.tar.gz} 
+        noext=${noext%.tar.gz}
 
         local name=${noext//-/ }
 
@@ -217,13 +245,13 @@ gbench () {
 	else
 		$HOME/dist/$noext/geekbench_x86_32 | tee $logfile
 	fi
-	
+
 	echo "--- Geekbench Results End ---" >> $logfile
 	echo "" >> $logfile
 
 	log "Finished. Removing Geekbench files"
 	sleep 1
-#	rm -rf $HOME/dist/
+	rm -rf $HOME/dist/
 
 	log ""
 
@@ -245,6 +273,7 @@ hlp () {
 	echo "-d	: Disk speed test"
 	echo "-4	: IPv4 speed test"
 	echo "-6	: IPv4 speed test"
+	echo "-a	: IPv4 speed test for Asia/Pacific region"
 	echo "-b	: System benchmark (Geekbench)"
 	echo "-h	: This help page"
 	echo ""
@@ -262,17 +291,19 @@ main () {
 	local ip6=0
 	local bench=0
 	local help=0
+	local ap=0
 
 	if (( $# == 0 )); then
 		sys=1; disk=1; ip4=1; ip6=1
 	else
-		while getopts sd46bh option
+		while getopts sd46bha option
 		do
 			case $option in
 				s  ) sys=1;;
 				d  ) disk=1;;
 				4  ) ip4=1;;
 				6  ) ip6=1;;
+				a  ) ap=1;;
 				b  ) bench=1;;
 				h  ) ;&
 				\? ) ;&
@@ -281,7 +312,7 @@ main () {
 		done
 	fi
 
-	if (( help == 1 )) || (( $(( $sys+$disk+$ip4+$ip6+$bench+$help )) == 0 )); then
+	if (( help == 1 )) || (( $(( $sys+$disk+$ip4+$ip6+$bench+$help+$ap )) == 0 )); then
 		hlp
 	else
 
@@ -297,6 +328,7 @@ main () {
 		(( disk  == 1 ))  && iotest
 		(( ip4   == 1 ))  && speedtest4
 		(( ip6   == 1 ))  && speedtest6
+		(( ap    == 1 ))  && AsiaPacificSpeedTest
 		(( bench == 1 ))  && gbench
 	fi
 }
