@@ -272,7 +272,7 @@ hlp () {
 	echo "-s	: Displays system information such as CPU and RAM."
 	echo "-d	: Disk speed test"
 	echo "-4	: IPv4 speed test"
-	echo "-6	: IPv4 speed test"
+	echo "-6	: IPv6 speed test"
 	echo "-a	: IPv4 speed test for Asia/Pacific region"
 	echo "-b	: System benchmark (Geekbench)"
 	echo "-h	: This help page"
